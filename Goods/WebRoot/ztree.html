@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script type="text/javascript" src="js/jquery-1.4.4.min.js"></script>
+    <!-- <link rel="stylesheet" href="zTree_v3/css/metroStyle/metroStyle.css"/> -->
+    <!-- <link rel="stylesheet" href="zTree_v3/css/awesomeStyle/awesome.css"> -->
+    <link rel="stylesheet" href="zTree_v3/css/zTreeStyle/zTreeStyle.css">
+    <script type="text/javascript" src="zTree_v3/js/jquery.ztree.all.min.js"></script>
+    <style>
+        p {
+            margin: 0px;
+            font-style: italic;
+        }
+        
+        .nav_horizon {
+            background-color: lightgray;
+            width: 100%;
+            height: 50px;
+            top: 0px;
+            padding: 0;
+        }
+        
+        .nav_horizon p {
+            margin: auto;
+            padding: 12px;
+        }
+        
+        .nav_box {
+            width: 500px;
+            overflow: hidden;
+            margin: 5px 0 0 0;
+        }
+        
+        .ztree {
+            background-color: white;
+        }
+        
+        .nav_view {
+            background-attachment: fixed;
+            background-color: lightskyblue;
+            width: 500px;
+            height: auto;
+            display: table-cell;
+        }
+        
+        .nav_view div {
+            margin-left: 48px;
+        }
+        
+        .nav_view_input {
+            width: 250px;
+        }
+        
+        .nav_tree {
+            width: 240px;
+            height: auto;
+            display: table-cell;
+        }
+        
+        .save {
+            display: block;
+            margin-top: 20px;
+        }
+        
+        .bt_nav {
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            background-image: url(images/nav.png);
+            background-size: auto;
+            height: 50px;
+            width: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav_horizon">
+        <p style="font-style: normal;">商品目录管理</p>
+    </nav>
+    <div class="nav_box" style="float: left;">
+        <div class="nav_tree">
+            <ul id="treeDemo" class="ztree"></ul>
+        </div>
+        <div class="nav_view">
+            <div>
+                <p>上级目录</p>
+                <input id="topname" type="text" disabled="disabled" class="nav_view_input">
+                <p>当前目录</p>
+                <input id="nowname" type="text" class="nav_view_input">
+                <input type="hidden" id="menuId"/>
+                <input type="hidden" id="parentId"/>
+                <br>
+                <button class="save">保存修改</button>
+            </div>
+        </div>
+    </div>
+    <script>
+// 格式配置
+        var settingss = {
+            edit: {
+                enable: true,
+                drag: {
+                    isMove: true,
+                    prev: true,
+                    autoOpenTime: 0
+                },
+                editNameSelectAll: true,
+                showRemoveBtn: true,
+                removeTitle: "删除节点",
+                // renameTitle: "编辑节点名称",
+                showRenameBtn: false,
+            },
+            view: {
+                selectedMulti: true,
+                showIcon: true,
+                showLine: true
+            },
+            data: {
+                simpleData: {
+                    enable: true, //true 、 false 分别表示 使用 、 不使用 简单数据模式
+                    idKey: "id", //节点数据中保存唯一标识的属性名称
+                    pIdKey: "pId", //节点数据中保存其父节点唯一标识的属性名称  
+                    rootPId: -1 //用于修正根节点父节点数据，即 pIdKey 指定的属性值
+                },
+                key: {
+                    name: "name" //zTree 节点数据保存节点名称的属性名称  默认值："name"
+                }
+            },
+            check: {
+                enable: false, //true 、 false 分别表示 显示 、不显示 复选框或单选框
+                nocheckInherit: true //当父节点设置 nocheck = true 时，设置子节点是否自动继承 nocheck = true 
+            },
+            callback: {
+                onClick: onClick,
+                onRemove: zTreeOnRemove
+            },
+            async:{
+            	enable:true
+            }
+        };
+        // 初始化 
+        // zTreeObj = $.fn.zTree.init($("#treeDemo"), settingss, zNodes); //初始化树
+        // zTreeObj.expandAll(true); //true 节点全部展开、false所有节点收缩
+// 初始化节点获取菜单
+        $(document).ready(function() {
+            $.ajax({
+                type: "post",
+                url:"goods.do",
+                data:{"pId":"0"},
+                dataType: "json",
+                success: function(response) {
+                   	if(response.code == 1){
+	                   	$.fn.zTree.init($("#treeDemo"), settingss, response.menu);
+                   	}else{
+                   		alert("获取菜单失败！");
+                   	}
+                 }
+            }); 
+        });
+        
+//菜单点击事件
+        function onClick(e, treeId, treeNode) {
+            // if (treeNode.isParent) //判断是否是父节点
+            // alert(treeNode.getParentNode().name);
+            var parentName = document.getElementById('topname');
+            var parentId = document.getElementById('parentId');
+            if(treeNode.id >= 1){
+            	parentName.value = treeNode.getParentNode().name;
+            	parentId .value = treeNode.getParentNode().id;
+            }else{
+           		parentName.value = "";
+            }
+            //获取当前结点上的名称属性数据
+            document.getElementById('nowname').value = treeNode.name;
+            document.getElementById('menuId').value = treeNode.id;
+        };
+        
+//点击修改目录按钮
+        $(".save").click(function(){
+        	//console.log($("#parentId").val());
+                   	 $.ajax({
+                type: "post",
+                url:"updateGood.do",
+                data:{"id":$("#menuId").val(),"name":$("#nowname").val(),"pId":-1},
+                dataType: "json",
+                success: function(response) {
+                   	if(response!=null){
+						var treeObj =   $.fn.zTree.getZTreeObj("treeDemo");
+						var nodes = treeObj.getSelectedNodes();
+						if(nodes.length>0){
+							nodes[0].name = $("#nowname").val();
+							treeObj.updateNode(nodes[0]);
+						}          
+                   	}else{
+                   		alert("修改菜单失败！");
+                   	}
+                 }
+            }); 
+                         
+
+        });
+        
+//删除当前目录
+		function zTreeOnRemove(event, treeId, treeNode) {
+		    $.ajax({
+		        url:"deleteGood.do",
+		        type: "post",
+		        data:{
+		        	"id":treeNode.id
+		        },
+		        success : function(data) {
+		        	if(data!=null){
+		            	location.reload();
+		            }else{
+		            	alert("删除失败");
+		         	}
+		        }
+		    });
+		}
+    </script>
+</body>
+
+</html>

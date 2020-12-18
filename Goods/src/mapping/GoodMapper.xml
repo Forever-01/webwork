@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="dao.IGoodDAO">
+<!-- 查询 -->
+	<select id="query" resultType="vo.Good">
+		select * from t_menu
+	</select>
+	<select id="queryByPid" resultType="vo.Good">
+		select * from t_menu pId=#{id}
+	</select>
+	
+<!-- 修改 -->	
+	<update id="updateGood" parameterType="vo.Good">
+	update t_menu
+	<set>
+		<if test="name != null and name != ''">
+			name = #{name},
+		</if>
+		<if test="pId != -1">
+			pid = #{pId},
+		</if>
+	</set>
+	<where>
+		id = #{id}
+	</where>
+	</update>
+	
+<!-- 删除-->
+  <delete id="deleteGood"  parameterType="vo.Good" >
+    delete from t_menu
+    where id = #{id}
+  </delete>
+  <!-- 1 -->
+  <delete id="deleteChildGood"  parameterType="vo.Good" >
+    delete from t_menu
+    where pId = #{id}
+  </delete>
+
+</mapper>
+
+
